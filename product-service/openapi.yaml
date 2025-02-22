@@ -1,0 +1,96 @@
+openapi: 3.0.3
+info:
+  title: Product Service API
+  description: |-
+    This is Swagger documentation for my AWS project Product Service API.
+    
+    Some useful links:
+    - [The Service Repo](https://github.com/MaksimGurbanow/shop-aws-backend)
+  termsOfService: http://swagger.io/terms/
+  contact:
+    email: maksim20051708@gmail.com
+  version: 1.0.11
+
+externalDocs:
+  description: Find out more about Swagger
+  url: http://swagger.io
+
+servers:
+  - url: https://btrfaumnqd.execute-api.us-east-1.amazonaws.com
+    description: AWS API Gateway (dev)
+
+tags:
+  - name: product
+    description: Product operations
+
+paths:
+  /products:
+    get:
+      tags:
+        - product
+      summary: Get a list of products
+      description: Returns all available products.
+      operationId: getProductsList
+      responses:
+        '200':
+          description: A list of products
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Product'
+        '500':
+          description: Internal Server Error
+
+  /products/{productId}:
+    get:
+      tags:
+        - product
+      summary: Get product by ID
+      description: Returns a single product based on the given product ID.
+      operationId: getProductsById
+      parameters:
+        - name: productId
+          in: path
+          required: true
+          description: The ID of the product
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Product details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Product'
+        '404':
+          description: Product not found
+        '500':
+          description: Internal Server Error
+      x-amazon-apigateway-integration:
+        uri: arn:aws:apigateway:us-east-1:lambda:path/2015-03-31/functions/arn:aws:lambda:us-east-1:YOUR_ACCOUNT_ID:function:getProductsById/invocations
+        httpMethod: POST
+        type: aws_proxy
+
+components:
+  schemas:
+    Product:
+      type: object
+      properties:
+        id:
+          type: string
+          example: "1"
+        title:
+          type: string
+          example: "BMW X5"
+        price:
+          type: number
+          format: float
+          example: 100000
+        description:
+          type: string
+          example: "This is BMW X5"
+        count:
+          type: integer
+          example: 10
