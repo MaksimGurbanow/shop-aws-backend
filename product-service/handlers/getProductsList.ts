@@ -14,16 +14,23 @@ export const handler = async (
   event: APIGatewayProxyEvent
 ): Promise<APIGatewayProxyResult> => {
   try {
+    console.group("Request");
+    console.log(event);
+    console.groupEnd();
     const productsResponse = await dynamo.send(
       new ScanCommand({ TableName: process.env.PRODUCTS_TABLE })
     );
     const products = productsResponse.Items || [];
-
+    console.group("Products");
+    console.log(products);
+    console.groupEnd();
     const stockResponse = await dynamo.send(
       new ScanCommand({ TableName: process.env.STOCKS_TABLE })
     );
     const stocks = stockResponse.Items || [];
-
+    console.group("Stocks");
+    console.log(stocks);
+    console.groupEnd();
     const mergedResponse = products.map((product) => {
       const stock = stocks.find((s) => s.product_id === product.id);
       return {

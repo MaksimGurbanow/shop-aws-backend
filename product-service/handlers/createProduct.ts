@@ -3,7 +3,7 @@ import {
   DynamoDBClient,
   TransactWriteItemsCommand,
 } from "@aws-sdk/client-dynamodb";
-import { DynamoDBDocumentClient } from "@aws-sdk/lib-dynamodb";
+import { DynamoDBDocumentClient, QueryCommand } from "@aws-sdk/lib-dynamodb";
 import { APIGatewayProxyEvent, APIGatewayProxyResult } from "aws-lambda";
 import { v4 as uuid } from "uuid";
 
@@ -26,6 +26,9 @@ export const handler = async (
         body: JSON.stringify({ message: "Product data is invalid" }),
       };
     }
+    console.group("Request");
+    console.log(event);
+    console.groupEnd();
     const productId = uuid();
     const transactCommand = new TransactWriteItemsCommand({
       TransactItems: [
@@ -52,9 +55,22 @@ export const handler = async (
       ],
     });
     const response = await client.send(transactCommand);
+    console.group("Response");
+    console.log("response", response);
+    console.groupEnd();
     return {
       statusCode: 200,
-      body: JSON.stringify(response, null, 2),
+      body: JSON.stringify(
+        {
+          id: productId,
+          title: body.title,
+          price: body.price,
+          description: body.description ?? "",
+          count: body.count ?? 0,
+        },
+        null,
+        2
+      ),
     };
   } catch (error) {
     return {

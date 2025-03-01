@@ -16,7 +16,7 @@ externalDocs:
   url: http://swagger.io
 
 servers:
-  - url: https://btrfaumnqd.execute-api.us-east-1.amazonaws.com
+  -url: https://vecx6oo32g.execute-api.us-east-1.amazonaws.com/prod/products
     description: AWS API Gateway (dev)
 
 tags:
@@ -42,6 +42,18 @@ paths:
                   $ref: '#/components/schemas/Product'
         '500':
           description: Internal Server Error
+      post:
+        tags:
+          - product
+        summary: Create a new product
+        description: Creates a new product based on the given request body.
+        operationId: createProduct
+        requestBody:
+          required: true
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Product'
 
   /products/{productId}:
     get:

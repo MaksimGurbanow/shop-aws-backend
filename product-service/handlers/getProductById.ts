@@ -9,7 +9,10 @@ export const handler = async (
   event: APIGatewayProxyEvent
 ): Promise<APIGatewayProxyResult> => {
   const { productId } = event.pathParameters!;
+  console.group("Request");
+  console.log(event);
   console.log("productId", productId);
+  console.groupEnd();
   const productResponse = await dynamo.send(
     new QueryCommand({
       TableName: process.env.PRODUCTS_TABLE,
@@ -17,6 +20,9 @@ export const handler = async (
       ExpressionAttributeValues: { ":id": productId },
     })
   );
+  console.group("Product");
+  console.log(productResponse);
+  console.groupEnd();
   const product = productResponse.Items?.[0];
   const stockResponse = await dynamo.send(
     new QueryCommand({
@@ -25,6 +31,9 @@ export const handler = async (
       ExpressionAttributeValues: { ":id": productId },
     })
   );
+  console.group("Stock");
+  console.log(stockResponse);
+  console.groupEnd();
   const stock = stockResponse.Items?.[0];
   const mergedResponse = { ...product, count: stock?.count || 0 };
   try {
