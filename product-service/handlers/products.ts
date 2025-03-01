@@ -1,4 +1,12 @@
-module.exports.mockProducts =  [
+interface Product {
+  id: number | string;
+  title: string;
+  price: number;
+  description: string;
+  count: number;
+}
+
+export const products: Product[] = [
   {
     id: '1',
     title: 'BMW X5',
@@ -41,4 +49,4 @@ module.exports.mockProducts =  [
     description: 'This is Wolkswagen Passat',
     count: 10,
   }
-]
+];
