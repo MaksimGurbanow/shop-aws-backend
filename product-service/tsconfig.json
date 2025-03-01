@@ -30,6 +30,7 @@
     "node_modules",
     "cdk.out",
     "test",
-    "dist"
+    "dist",
+    "scripts"
   ]
 }
