@@ -4,6 +4,7 @@ import { Construct } from "constructs";
 import * as s3 from "aws-cdk-lib/aws-s3";
 import * as lambda from "aws-cdk-lib/aws-lambda";
 import * as apigateway from "aws-cdk-lib/aws-apigateway";
+import * as s3n from "aws-cdk-lib/aws-s3-notifications";
 import path from "node:path";
 
 export class ImportServiceStack extends cdk.Stack {
@@ -37,6 +38,26 @@ export class ImportServiceStack extends cdk.Stack {
     });
 
     bucket.grantPut(importProductsFile);
+
+    const importProductsParser = new lambda.Function(
+      this,
+      "ImportProductsParser",
+      {
+        runtime: lambda.Runtime.NODEJS_20_X,
+        handler: "handlers/importProductsParser.handler",
+        code: lambda.Code.fromAsset(path.join(__dirname, "../dist/handlers")),
+        environment,
+        layers,
+      }
+    );
+
+    bucket.grantRead(importProductsParser);
+
+    bucket.addEventNotification(
+      s3.EventType.OBJECT_CREATED,
+      new s3n.LambdaDestination(importProductsParser),
+      { prefix: "uploaded/" }
+    );
 
     const api = new apigateway.LambdaRestApi(this, "ImportProductsFileAPI", {
       handler: importProductsFile,

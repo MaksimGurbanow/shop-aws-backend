@@ -2,7 +2,6 @@ import { S3 } from "aws-sdk";
 import { APIGatewayProxyEvent } from "aws-lambda";
 
 const s3 = new S3({ region: "eu-west-1" });
-const BUCKET_NAME = "lambda-s3-integration-practice";
 
 export const handler = async (event: APIGatewayProxyEvent) => {
   try {
@@ -15,7 +14,7 @@ export const handler = async (event: APIGatewayProxyEvent) => {
     }
 
     const params = {
-      Bucket: BUCKET_NAME,
+      Bucket: process.env.BUCKET_NAME,
       Key: `uploaded/${filename}`,
       ContentType: "text/csv",
       Expires: 120,
