@@ -8,6 +8,6 @@
   "description": "NodeJS dependecies for lambda functions",
   "dependencies": {
     "aws-sdk": "^2.102.0",
-    "csv-parser": "^2.3.0",
+    "csv-parser": "^2.3.5",
   }
 }

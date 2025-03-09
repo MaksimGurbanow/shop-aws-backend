@@ -6,6 +6,8 @@ import * as lambda from "aws-cdk-lib/aws-lambda";
 import * as apigateway from "aws-cdk-lib/aws-apigateway";
 import * as s3n from "aws-cdk-lib/aws-s3-notifications";
 import path from "node:path";
+import { Cors } from "aws-cdk-lib/aws-apigateway";
+import { S3EventSourceV2 } from "aws-cdk-lib/aws-lambda-event-sources";
 
 export class ImportServiceStack extends cdk.Stack {
   constructor(scope: Construct, id: string, props?: cdk.StackProps) {
@@ -37,8 +39,7 @@ export class ImportServiceStack extends cdk.Stack {
       layers,
     });
 
-    bucket.grantPut(importProductsFile);
-
+    
     const importProductsParser = new lambda.Function(
       this,
       "ImportProductsParser",
@@ -50,30 +51,43 @@ export class ImportServiceStack extends cdk.Stack {
         layers,
       }
     );
-
+    
+    bucket.grantPut(importProductsFile);
     bucket.grantRead(importProductsParser);
+    bucket.grantReadWrite(importProductsParser);
+    bucket.grantDelete(importProductsParser);
 
-    bucket.addEventNotification(
-      s3.EventType.OBJECT_CREATED,
-      new s3n.LambdaDestination(importProductsParser),
-      { prefix: "uploaded/" }
+    importProductsParser.addEventSource(
+      new S3EventSourceV2(bucket, {
+        events: [s3.EventType.OBJECT_CREATED],
+        filters: [{ prefix: "uploaded/" }],
+      })
     );
 
-    const api = new apigateway.LambdaRestApi(this, "ImportProductsFileAPI", {
-      handler: importProductsFile,
+    const api = new apigateway.RestApi(this, "ImportProductsFileAPI", {
       restApiName: "Import Products Service",
       description: "This service allows importing products from CSV file",
       defaultCorsPreflightOptions: {
-        allowOrigins: apigateway.Cors.ALL_ORIGINS,
-        allowMethods: apigateway.Cors.ALL_METHODS,
+        allowOrigins: Cors.ALL_ORIGINS,
+        allowMethods: Cors.ALL_METHODS,
+        allowHeaders: ['Content-Type', 'Authorization'],
+        allowCredentials: true,
       },
-      proxy: false,
     });
 
     const importProducts = api.root.addResource("import");
     importProducts.addMethod(
       "GET",
-      new apigateway.LambdaIntegration(importProductsFile)
+      new apigateway.LambdaIntegration(importProductsFile),
+      {
+        requestParameters: {
+          "method.request.querystring.name": true,
+        },
+      }
     );
+
+    new cdk.CfnOutput(this, "ImportServiceApi", {
+      value: api.url,
+    });
   }
 }
