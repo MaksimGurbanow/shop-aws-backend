@@ -10,6 +10,9 @@ import * as sns from "aws-cdk-lib/aws-sns";
 import * as snsSubscription from "aws-cdk-lib/aws-sns-subscriptions";
 
 const EMAIL = "maksim20051708@gmail.com";
+const EMAIL_TITLE = "maksim20051708@gmail.com";
+const EMAIL_PRICE = "maksim20051708@gmail.com";
+const EMAIL_DESCRIPTION = "maksim20051708@gmail.com";
 
 export class ProductServiceStack extends cdk.Stack {
   constructor(scope: Construct, id: string, props?: cdk.StackProps) {
@@ -32,6 +35,35 @@ export class ProductServiceStack extends cdk.Stack {
       new snsSubscription.EmailSubscription(EMAIL)
     );
 
+    createProductTopic.addSubscription(
+      new snsSubscription.EmailSubscription(EMAIL_TITLE, {
+        filterPolicy: {
+          title: sns.SubscriptionFilter.stringFilter({
+            allowlist: ["Special"],
+          }),
+        },
+      })
+    );
+
+    createProductTopic.addSubscription(
+      new snsSubscription.EmailSubscription(EMAIL_PRICE, {
+        filterPolicy: {
+          price: sns.SubscriptionFilter.numericFilter({ greaterThan: 100 }),
+        },
+      })
+    );
+
+    // For users wanting to buy something of Limited Edition
+    createProductTopic.addSubscription(
+      new snsSubscription.EmailSubscription(EMAIL_DESCRIPTION, {
+        filterPolicy: {
+          description: sns.SubscriptionFilter.stringFilter({
+            allowlist: ["Limited Edition"],
+          }),
+        },
+      })
+    );
+
     // DynamoDB tables
 
     const productsTable = dynamo.Table.fromTableName(
@@ -51,6 +83,7 @@ export class ProductServiceStack extends cdk.Stack {
     const environment = {
       PRODUCTS_TABLE: productsTable.tableName,
       STOCKS_TABLE: stocksTable.tableName,
+      SNS_TOPIC_ARN: createProductTopic.topicArn,
     };
 
     const layers = [
