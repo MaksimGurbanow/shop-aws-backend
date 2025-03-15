@@ -25,6 +25,7 @@
       "./node_modules/@types"
     ],
     "outDir": "./dist",
+    "rootDir": "./"
   },
   "exclude": [
     "node_modules",

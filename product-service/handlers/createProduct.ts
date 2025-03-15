@@ -1,4 +1,3 @@
-import { description } from "./../layers/nodejs/node_modules/aws-sdk/clients/frauddetector.d";
 import {
   DynamoDBClient,
   TransactWriteItemsCommand,

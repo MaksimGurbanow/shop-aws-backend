@@ -9,10 +9,10 @@ import * as lambdaEventSources from "aws-cdk-lib/aws-lambda-event-sources";
 import * as sns from "aws-cdk-lib/aws-sns";
 import * as snsSubscription from "aws-cdk-lib/aws-sns-subscriptions";
 
-const EMAIL = "maksim20051708@gmail.com";
-const EMAIL_TITLE = "maksim20051708@gmail.com";
-const EMAIL_PRICE = "maksim20051708@gmail.com";
-const EMAIL_DESCRIPTION = "maksim20051708@gmail.com";
+const EMAIL = "maksim20051708@gmail.com";         // You can use your account to test it
+const EMAIL_TITLE = "maksim20251708@gmail.com";   // You can use your account to test it
+const EMAIL_PRICE = "linqek1029@gmail.com";       // You can use your account to test it
+const EMAIL_DESCRIPTION = "kasiygigi@gmail.com";  // You can use your account to test it
 
 export class ProductServiceStack extends cdk.Stack {
   constructor(scope: Construct, id: string, props?: cdk.StackProps) {

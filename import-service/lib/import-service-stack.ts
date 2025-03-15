@@ -4,10 +4,10 @@ import { Construct } from "constructs";
 import * as s3 from "aws-cdk-lib/aws-s3";
 import * as lambda from "aws-cdk-lib/aws-lambda";
 import * as apigateway from "aws-cdk-lib/aws-apigateway";
-import * as s3n from "aws-cdk-lib/aws-s3-notifications";
 import path from "node:path";
 import { Cors } from "aws-cdk-lib/aws-apigateway";
 import { S3EventSourceV2 } from "aws-cdk-lib/aws-lambda-event-sources";
+import * as sqs from "aws-cdk-lib/aws-sqs";
 
 export class ImportServiceStack extends cdk.Stack {
   constructor(scope: Construct, id: string, props?: cdk.StackProps) {
@@ -19,8 +19,18 @@ export class ImportServiceStack extends cdk.Stack {
       "lambda-s3-integration-practice"
     );
 
+    const productQueue = sqs.Queue.fromQueueAttributes(
+      this,
+      "CatalogItemQueue",
+      {
+        queueArn: "arn:aws:sqs:us-east-1:084828592999:catalog-items-queue",
+        queueName: "catalog-items-queue",
+      }
+    );
+
     const environment = {
       BUCKET_NAME: bucket.bucketName,
+      SQS_URL: productQueue.queueUrl,
     };
 
     const layers = [
@@ -39,7 +49,6 @@ export class ImportServiceStack extends cdk.Stack {
       layers,
     });
 
-    
     const importProductsParser = new lambda.Function(
       this,
       "ImportProductsParser",
@@ -49,13 +58,15 @@ export class ImportServiceStack extends cdk.Stack {
         code: lambda.Code.fromAsset(path.join(__dirname, "../dist/handlers")),
         environment,
         layers,
+        timeout: cdk.Duration.seconds(30),
       }
     );
-    
+
     bucket.grantPut(importProductsFile);
     bucket.grantRead(importProductsParser);
     bucket.grantReadWrite(importProductsParser);
     bucket.grantDelete(importProductsParser);
+    productQueue.grantSendMessages(importProductsParser);
 
     importProductsParser.addEventSource(
       new S3EventSourceV2(bucket, {
@@ -70,7 +81,7 @@ export class ImportServiceStack extends cdk.Stack {
       defaultCorsPreflightOptions: {
         allowOrigins: Cors.ALL_ORIGINS,
         allowMethods: Cors.ALL_METHODS,
-        allowHeaders: ['Content-Type', 'Authorization'],
+        allowHeaders: ["Content-Type", "Authorization"],
         allowCredentials: true,
       },
     });
