@@ -4,10 +4,35 @@ import * as lambda from "aws-cdk-lib/aws-lambda";
 import * as apigateway from "aws-cdk-lib/aws-apigateway";
 import path from "path";
 import * as dynamo from "aws-cdk-lib/aws-dynamodb";
+import * as sqs from "aws-cdk-lib/aws-sqs";
+import * as lambdaEventSources from "aws-cdk-lib/aws-lambda-event-sources";
+import * as sns from "aws-cdk-lib/aws-sns";
+import * as snsSubscription from "aws-cdk-lib/aws-sns-subscriptions";
+
+const EMAIL = "maksim20051708@gmail.com";
 
 export class ProductServiceStack extends cdk.Stack {
   constructor(scope: Construct, id: string, props?: cdk.StackProps) {
     super(scope, id, props);
+
+    // SQS
+
+    const catalogItemsQueue = new sqs.Queue(this, "CatalogItemQueue", {
+      queueName: "catalog-items-queue",
+      visibilityTimeout: cdk.Duration.seconds(120),
+    });
+
+    // SNS
+
+    const createProductTopic = new sns.Topic(this, "CreateProductTopic", {
+      topicName: "createProductTopic",
+    });
+
+    createProductTopic.addSubscription(
+      new snsSubscription.EmailSubscription(EMAIL)
+    );
+
+    // DynamoDB tables
 
     const productsTable = dynamo.Table.fromTableName(
       this,
@@ -21,6 +46,8 @@ export class ProductServiceStack extends cdk.Stack {
       "stocks"
     );
 
+    // Inner evironment for lambda functions
+
     const environment = {
       PRODUCTS_TABLE: productsTable.tableName,
       STOCKS_TABLE: stocksTable.tableName,
@@ -33,6 +60,8 @@ export class ProductServiceStack extends cdk.Stack {
         description: "Dependencies layer",
       }),
     ];
+
+    // Lambda functions
 
     const getProductsList = new lambda.Function(this, "getProductsList", {
       runtime: lambda.Runtime.NODEJS_20_X,
@@ -58,6 +87,20 @@ export class ProductServiceStack extends cdk.Stack {
       layers,
     });
 
+    const catalogBatchProcess = new lambda.Function(
+      this,
+      "catalogBatchProcess",
+      {
+        runtime: lambda.Runtime.NODEJS_20_X,
+        handler: "catalogBatchProcess.handler",
+        code: lambda.Code.fromAsset(path.join(__dirname, "../dist/handlers")),
+        environment,
+        layers,
+      }
+    );
+
+    // Gateway
+
     const api = new apigateway.RestApi(this, "products-api", {
       restApiName: "Products Service",
       defaultCorsPreflightOptions: {
@@ -68,12 +111,18 @@ export class ProductServiceStack extends cdk.Stack {
       },
     });
 
+    // Grant access to DynamoDB
+
     productsTable.grantReadWriteData(getProductsList);
     stocksTable.grantReadWriteData(getProductsList);
     productsTable.grantReadWriteData(getProductById);
     stocksTable.grantReadWriteData(getProductById);
     productsTable.grantWriteData(createProduct);
     stocksTable.grantWriteData(createProduct);
+    productsTable.grantWriteData(catalogBatchProcess);
+    stocksTable.grantWriteData(catalogBatchProcess);
+
+    // Integrate with gateway
 
     const products = api.root.addResource("products");
     products.addMethod(
@@ -93,6 +142,23 @@ export class ProductServiceStack extends cdk.Stack {
     new cdk.CfnOutput(this, "ProductByIdURL", {
       value: `${api.url}products/{productId}`,
       description: "The URL of the Product by ID",
+    });
+
+    // Integrate Lambda with SQS
+
+    catalogItemsQueue.grantConsumeMessages(catalogBatchProcess);
+    catalogBatchProcess.addEventSource(
+      new lambdaEventSources.SqsEventSource(catalogItemsQueue, {
+        batchSize: 5,
+      })
+    );
+
+    // Integrate Lambda with SNS
+    createProductTopic.grantPublish(catalogBatchProcess);
+
+    new cdk.CfnOutput(this, "CreateProductTopicARN", {
+      value: createProductTopic.topicArn,
+      description: "SNS Topic ARN",
     });
   }
 }
