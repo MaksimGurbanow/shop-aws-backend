@@ -9,12 +9,13 @@ import * as lambdaEventSources from "aws-cdk-lib/aws-lambda-event-sources";
 import * as sns from "aws-cdk-lib/aws-sns";
 import * as snsSubscription from "aws-cdk-lib/aws-sns-subscriptions";
 
-const EMAIL = "maksim20051708@gmail.com";         // You can use your account to test it
-const EMAIL_TITLE = "maksim20251708@gmail.com";   // You can use your account to test it
-const EMAIL_PRICE = "linqek1029@gmail.com";       // You can use your account to test it
-const EMAIL_DESCRIPTION = "kasiygigi@gmail.com";  // You can use your account to test it
+const EMAIL = "maksim20051708@gmail.com"; // You can use your account to test it
+const EMAIL_TITLE = "maksim20251708@gmail.com"; // You can use your account to test it
+const EMAIL_PRICE = "linqek1029@gmail.com"; // You can use your account to test it
+const EMAIL_DESCRIPTION = "kasiygigi@gmail.com"; // You can use your account to test it
 
 export class ProductServiceStack extends cdk.Stack {
+  public catalogItemQueueArn: string;
   constructor(scope: Construct, id: string, props?: cdk.StackProps) {
     super(scope, id, props);
 
@@ -24,6 +25,8 @@ export class ProductServiceStack extends cdk.Stack {
       queueName: "catalog-items-queue",
       visibilityTimeout: cdk.Duration.seconds(120),
     });
+
+    this.catalogItemQueueArn = catalogItemsQueue.queueArn;
 
     // SNS
 
@@ -88,7 +91,7 @@ export class ProductServiceStack extends cdk.Stack {
 
     const layers = [
       new lambda.LayerVersion(this, "NodeJsLayer", {
-        code: lambda.Code.fromAsset(path.join(__dirname, "../layers")),
+        code: lambda.Code.fromAsset(path.join(__dirname, "../layers/products")),
         compatibleRuntimes: [lambda.Runtime.NODEJS_20_X],
         description: "Dependencies layer",
       }),
@@ -99,7 +102,9 @@ export class ProductServiceStack extends cdk.Stack {
     const getProductsList = new lambda.Function(this, "getProductsList", {
       runtime: lambda.Runtime.NODEJS_20_X,
       handler: "getProductsList.handler",
-      code: lambda.Code.fromAsset(path.join(__dirname, "../dist/handlers")),
+      code: lambda.Code.fromAsset(
+        path.join(__dirname, "../../dist/src/product-service/handlers")
+      ),
       environment,
       layers,
     });
@@ -107,7 +112,9 @@ export class ProductServiceStack extends cdk.Stack {
     const getProductById = new lambda.Function(this, "getProductById", {
       runtime: lambda.Runtime.NODEJS_20_X,
       handler: "getProductById.handler",
-      code: lambda.Code.fromAsset(path.join(__dirname, "../dist/handlers")),
+      code: lambda.Code.fromAsset(
+        path.join(__dirname, "../../dist/src/product-service/handlers")
+      ),
       environment,
       layers,
     });
@@ -115,7 +122,9 @@ export class ProductServiceStack extends cdk.Stack {
     const createProduct = new lambda.Function(this, "createProduct", {
       runtime: lambda.Runtime.NODEJS_20_X,
       handler: "createProduct.handler",
-      code: lambda.Code.fromAsset(path.join(__dirname, "../dist/handlers")),
+      code: lambda.Code.fromAsset(
+        path.join(__dirname, "../../dist/src/product-service/handlers")
+      ),
       environment,
       layers,
     });
@@ -126,7 +135,9 @@ export class ProductServiceStack extends cdk.Stack {
       {
         runtime: lambda.Runtime.NODEJS_20_X,
         handler: "catalogBatchProcess.handler",
-        code: lambda.Code.fromAsset(path.join(__dirname, "../dist/handlers")),
+        code: lambda.Code.fromAsset(
+          path.join(__dirname, "../../dist/src/product-service/handlers")
+        ),
         environment,
         layers,
       }

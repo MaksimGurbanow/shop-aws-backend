@@ -8,9 +8,16 @@ import path from "node:path";
 import { Cors } from "aws-cdk-lib/aws-apigateway";
 import { S3EventSourceV2 } from "aws-cdk-lib/aws-lambda-event-sources";
 import * as sqs from "aws-cdk-lib/aws-sqs";
+import * as dotenv from "dotenv";
+
+dotenv.config();
 
 export class ImportServiceStack extends cdk.Stack {
-  constructor(scope: Construct, id: string, props?: cdk.StackProps) {
+  constructor(
+    scope: Construct,
+    id: string,
+    props?: cdk.StackProps & { basicAuthorizerArn: string; queueArn: string }
+  ) {
     super(scope, id, props);
 
     const bucket = s3.Bucket.fromBucketName(
@@ -23,7 +30,7 @@ export class ImportServiceStack extends cdk.Stack {
       this,
       "CatalogItemQueue",
       {
-        queueArn: "arn:aws:sqs:us-east-1:084828592999:catalog-items-queue",
+        queueArn: props?.queueArn || "",
         queueName: "catalog-items-queue",
       }
     );
@@ -35,16 +42,20 @@ export class ImportServiceStack extends cdk.Stack {
 
     const layers = [
       new lambda.LayerVersion(this, "NodeJsLayer", {
-        code: lambda.Code.fromAsset(path.join(__dirname, "../layers")),
+        code: lambda.Code.fromAsset(path.join(__dirname, "../layers/import")),
         compatibleRuntimes: [lambda.Runtime.NODEJS_20_X],
         description: "Dependencies layer",
       }),
     ];
 
+    // LAMBDAS
+
     const importProductsFile = new lambda.Function(this, "ImportProductsFile", {
       runtime: lambda.Runtime.NODEJS_20_X,
       handler: "handlers/importProductsFile.handler",
-      code: lambda.Code.fromAsset(path.join(__dirname, "../dist/handlers")),
+      code: lambda.Code.fromAsset(
+        path.join(__dirname, "../../dist/src/import-service/handlers")
+      ),
       environment,
       layers,
     });
@@ -55,7 +66,9 @@ export class ImportServiceStack extends cdk.Stack {
       {
         runtime: lambda.Runtime.NODEJS_20_X,
         handler: "handlers/importProductsParser.handler",
-        code: lambda.Code.fromAsset(path.join(__dirname, "../dist/handlers")),
+        code: lambda.Code.fromAsset(
+          path.join(__dirname, "../../dist/src/import-service/handlers")
+        ),
         environment,
         layers,
         timeout: cdk.Duration.seconds(30),

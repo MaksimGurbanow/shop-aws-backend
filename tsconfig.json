@@ -13,7 +13,6 @@
     "noImplicitThis": true,
     "alwaysStrict": true,
     "noUnusedLocals": false,
-    "esModuleInterop": true,
     "noUnusedParameters": false,
     "noImplicitReturns": true,
     "noFallthroughCasesInSwitch": false,
@@ -24,13 +23,14 @@
     "typeRoots": [
       "./node_modules/@types"
     ],
+    "esModuleInterop": true,
     "outDir": "./dist",
+    "sourceRoot": "./src",
+    "allowSyntheticDefaultImports": true
   },
   "exclude": [
     "node_modules",
     "cdk.out",
-    "test",
-    "dist",
-    "scripts"
+    "dist"
   ]
 }

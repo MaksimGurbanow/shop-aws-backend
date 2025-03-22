@@ -1,17 +1,15 @@
 {
-  "name": "import-service",
+  "name": "shared-stack",
   "version": "0.1.0",
   "bin": {
-    "import-service": "bin/import-service.js"
+    "shared-stack": "bin/shared-stack.js"
   },
   "scripts": {
     "build": "tsc",
     "watch": "tsc -w",
     "test": "jest",
     "cdk": "cdk",
-    "deploy": "cdk deploy",
-    "destroy": "cdk destroy",
-    "deploy:full": "npm run build && npm run deploy"
+    "deploy": "npm run build && cd ./cdk && cdk deploy --all"
   },
   "devDependencies": {
     "@types/aws-lambda": "^8.10.147",
@@ -24,11 +22,18 @@
     "typescript": "~5.6.3"
   },
   "dependencies": {
+    "@aws-cdk/aws-iam": "^1.203.0",
+    "@aws-cdk/aws-lambda": "^1.203.0",
+    "@aws-sdk/client-dynamodb": "^3.772.0",
+    "@aws-sdk/client-sns": "^3.758.0",
     "@aws-sdk/client-sqs": "^3.758.0",
+    "@aws-sdk/lib-dynamodb": "^3.772.0",
     "aws-cdk-lib": "2.179.0",
     "aws-lambda": "^1.0.7",
     "constructs": "^10.0.0",
     "csv-parser": "^3.2.0",
-    "source-map-support": "^0.5.21"
+    "dotenv": "^16.4.7",
+    "source-map-support": "^0.5.21",
+    "uuid": "^11.1.0"
   }
 }
