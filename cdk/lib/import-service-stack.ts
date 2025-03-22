@@ -48,6 +48,17 @@ export class ImportServiceStack extends cdk.Stack {
       }),
     ];
 
+    const api = new apigateway.RestApi(this, "ImportProductsFileAPI", {
+      restApiName: "Import Products Service",
+      description: "This service allows importing products from CSV file",
+      defaultCorsPreflightOptions: {
+        allowOrigins: Cors.ALL_ORIGINS,
+        allowMethods: Cors.ALL_METHODS,
+        allowHeaders: ["Content-Type", "Authorization"],
+        allowCredentials: true,
+      },
+    });
+
     // LAMBDAS
 
     const importProductsFile = new lambda.Function(this, "ImportProductsFile", {
@@ -75,6 +86,22 @@ export class ImportServiceStack extends cdk.Stack {
       }
     );
 
+    const basicAuthorization = lambda.Function.fromFunctionArn(
+      this,
+      "BasicAuthorizationLambda",
+      props?.basicAuthorizerArn || ""
+    );
+
+    const authorizer = new apigateway.TokenAuthorizer(
+      this,
+      "ImportAuthorizer",
+      {
+        handler: basicAuthorization,
+        identitySource: apigateway.IdentitySource.header("Authorization"),
+        resultsCacheTtl: cdk.Duration.seconds(120),
+      }
+    );
+
     bucket.grantPut(importProductsFile);
     bucket.grantRead(importProductsParser);
     bucket.grantReadWrite(importProductsParser);
@@ -88,17 +115,6 @@ export class ImportServiceStack extends cdk.Stack {
       })
     );
 
-    const api = new apigateway.RestApi(this, "ImportProductsFileAPI", {
-      restApiName: "Import Products Service",
-      description: "This service allows importing products from CSV file",
-      defaultCorsPreflightOptions: {
-        allowOrigins: Cors.ALL_ORIGINS,
-        allowMethods: Cors.ALL_METHODS,
-        allowHeaders: ["Content-Type", "Authorization"],
-        allowCredentials: true,
-      },
-    });
-
     const importProducts = api.root.addResource("import");
     importProducts.addMethod(
       "GET",
@@ -107,6 +123,8 @@ export class ImportServiceStack extends cdk.Stack {
         requestParameters: {
           "method.request.querystring.name": true,
         },
+        authorizationType: apigateway.AuthorizationType.CUSTOM,        
+        authorizer,
       }
     );
 
