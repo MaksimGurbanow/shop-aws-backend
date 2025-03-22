@@ -1,62 +1,69 @@
-import { Effect } from "@aws-cdk/aws-iam";
 import {
   APIGatewayTokenAuthorizerEvent,
   APIGatewayAuthorizerResult,
   Context,
   Callback,
 } from "aws-lambda";
-import * as dotenv from "dotenv";
 
-dotenv.config();
-
-const GITHUB_USERNAME = process.env.GITHUB_USERNAME || "";
-const AUTH_CREDENTIALS = process.env.AUTH_CREDENTIALS || "";
+const USER_NAME = process.env.GITHUB_USERNAME || "";
+const USER_PASSWORD = process.env.USER_PASSWORD || "";
 
 export const handler = async (
   event: APIGatewayTokenAuthorizerEvent,
-  _context: Context,
-  cb: Callback<APIGatewayAuthorizerResult>
-) => {
+  _context: Context
+): Promise<APIGatewayAuthorizerResult> => {
   try {
     console.log("Event", event);
     if (!event.authorizationToken) {
-      console.log("No auth token provided");
-      cb("Unauthorized");
-      return;
+      throw new Error("Unathorized");
     }
     const { authorizationToken: encodedCredentials, methodArn } = event;
     const [tokenType, token] = encodedCredentials.split(" ");
     if (tokenType !== "Basic" || !token) {
-      console.log("Invalid token format.");
-      cb("Unauthorized");
+      throw new Error("Unathorized");
     }
 
     const decodedCredentials = Buffer.from(token, "base64").toString("utf-8");
     const [username, password] = decodedCredentials.split(":");
 
-    console.log(`Decoded credentials: ${username}:******`);
-    const validPassword = process.env[username];
+    console.log(`Decoded credentials: ${username}:${password}`);
+    const validPassword = USER_PASSWORD;
 
     const effect =
       !validPassword || validPassword !== password ? "Deny" : "Allow";
+    console.log(effect, validPassword, password);
     if (effect === "Deny") {
-      cb("Forbidden");
-      return;
+      return {
+        context: {
+          "Access-Control-Allow-Origin": "*",
+          "Access-Control-Allow-Headers": "Content-Type",
+          "Access-Control-Allow-Methods": "OPTIONS,GET",
+        },
+        ...generatePolicy(USER_NAME, "Deny", event.methodArn),
+      };
     }
 
-    if (methodArn !== "Allow" && methodArn !== "Deny") {
-      cb("Forbidden");
-      return;
-    }
-
-    const policy = generatePolicy(encodedCredentials, methodArn, effect);
-    cb(null, policy);
+    return {
+      context: {
+        "Access-Control-Allow-Origin": "*",
+        "Access-Control-Allow-Headers": "Content-Type",
+        "Access-Control-Allow-Methods": "OPTIONS,GET",
+      },
+      ...generatePolicy(encodedCredentials, "Allow", methodArn),
+    };
   } catch (error: any) {
-    console.log("Error:", error.message);
+    console.log("Here is an Error:", error.message);
     if (error.message === "Unauthorized") {
-      cb("Unauthorized");
+      throw new Error("Unathorized");
     }
-    cb("Forbidden");
+    return {
+      context: {
+        "Access-Control-Allow-Origin": "*",
+        "Access-Control-Allow-Headers": "Content-Type",
+        "Access-Control-Allow-Methods": "OPTIONS,GET",
+      },
+      ...generatePolicy(USER_NAME, "Deny", event.methodArn),
+    };
   }
 };
 

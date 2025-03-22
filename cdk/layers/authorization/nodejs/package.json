@@ -8,7 +8,7 @@
   "description": "NodeJS dependecies for lambda functions",
   "dependencies": {
     "aws-lambda": "^1.0.7",
-    "aws-sdk": "^2.102.0",
+    "aws-sdk": "^2.1692.0",
     "dotenv": "^16.4.7"
   }
 }

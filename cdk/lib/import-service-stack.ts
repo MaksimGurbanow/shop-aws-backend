@@ -59,6 +59,16 @@ export class ImportServiceStack extends cdk.Stack {
       },
     });
 
+    api.addGatewayResponse('Default4XX', {
+      type: apigateway.ResponseType.DEFAULT_4XX,
+      responseHeaders: {
+        'Access-Control-Allow-Origin': "'*'",
+        'Access-Control-Allow-Headers': "'Content-Type,Authorization'",
+        'Access-Control-Allow-Methods': "'OPTIONS,GET'",
+        'Access-Control-Allow-Credentials': "'true'"
+      }
+    });
+
     // LAMBDAS
 
     const importProductsFile = new lambda.Function(this, "ImportProductsFile", {
@@ -90,6 +100,17 @@ export class ImportServiceStack extends cdk.Stack {
       this,
       "BasicAuthorizationLambda",
       props?.basicAuthorizerArn || ""
+    );
+
+    const authorizationInvokePermission = new lambda.CfnPermission(
+      this,
+      "AuthorizationInvokePermission",
+      {
+        functionName: basicAuthorization.functionName,
+        principal: "apigateway.amazonaws.com",
+        action: "lambda:InvokeFunction",
+        sourceArn: `arn:aws:execute-api:${this.region}:${this.account}:${api.restApiId}/*/*`,
+      }
     );
 
     const authorizer = new apigateway.TokenAuthorizer(
@@ -127,6 +148,11 @@ export class ImportServiceStack extends cdk.Stack {
         authorizer,
       }
     );
+
+    const deployment = api.latestDeployment;
+    if (deployment) {
+      deployment.node.addDependency(authorizationInvokePermission);
+    }
 
     new cdk.CfnOutput(this, "ImportServiceApi", {
       value: api.url,

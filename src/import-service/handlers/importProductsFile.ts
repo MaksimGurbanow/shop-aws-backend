@@ -9,7 +9,15 @@ export const handler = async (event: APIGatewayProxyEvent) => {
     if (!filename) {
       return {
         statusCode: 400,
-        body: JSON.stringify({ message: 'Missing "name" query parameter' }),
+        body: JSON.stringify({
+          message: 'Missing "name" query parameter',
+          headers: {
+            "Access-Control-Allow-Origin": "*",
+            "Access-Control-Allow-Methods": "OPTIONS,GET,PUT",
+            "Access-Control-Allow-Credentials": "true",
+            "Access-Control-Allow-Headers": "Content-Type,Authorization",
+          },
+        }),
       };
     }
 
@@ -36,7 +44,15 @@ export const handler = async (event: APIGatewayProxyEvent) => {
     console.error(error);
     return {
       statusCode: 500,
-      body: JSON.stringify({ message: "Internal server error" }),
+      body: JSON.stringify({
+        message: "Internal server error",
+        headers: {
+          "Access-Control-Allow-Origin": "*",
+          "Access-Control-Allow-Methods": "OPTIONS,GET,PUT",
+          "Access-Control-Allow-Credentials": "true",
+          "Access-Control-Allow-Headers": "Content-Type,Authorization",
+        },
+      }),
     };
   }
 };

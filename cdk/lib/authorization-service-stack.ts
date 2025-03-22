@@ -34,7 +34,7 @@ export class AuthorizationServiceStack extends cdk.Stack {
         runtime: lambda.Runtime.NODEJS_20_X,
         handler: "handlers/basicAuthorizer.handler",
         code: lambda.Code.fromAsset(
-          path.join(__dirname, "../../dist/src/import-service/handlers")
+          path.join(__dirname, "../../dist/src/authorization-service/handlers")
         ),
         environment,
         layers,
